@@ -39,8 +39,6 @@ psql/grid <- grid.sql, psql/city [method:psql]
 psql/distances <- distances.py, psql/streets, psql/grid
     python $INPUT && touch $OUTPUT
 
-psql/rast_distances <- rast_distances.sql, psql/distances [method:psql]
-
 rast_distances.tiff <- psql/rast_distances
     psql -c "\COPY (SELECT encode(ST_AsTIFF(st_setvalues), 'hex') AS tiff FROM rast_distances) TO '$OUTPUT'"
     xxd -p -r $OUTPUT > $OUTPUT
