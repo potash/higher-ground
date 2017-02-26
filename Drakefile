@@ -23,20 +23,25 @@ URL="https://s3.amazonaws.com/metro-extracts.mapzen.com/chicago_illinois.osm.pbf
 download/chicago_illinois.osm.pbf <- [method:wget -timecheck]
 
 psql/planet_osm <- download/chicago_illinois.osm.pbf
-    osm2pgsql --proj 4326 --create --database $PGDATABASE $INPUT && touch $OUTPUT
+    osm2pgsql --slim --proj 3395 --create --database $PGDATABASE $INPUT && touch $OUTPUT
 
 URL="https://data.cityofchicago.org/api/geospatial/ewy2-6yfk?method=export&format=Shapefile"
 download/city.zip, download/geo_export_b921358d-b550-4c64-a8d5-a5e11eb782c4.shp <- [method:wget_unzip -timecheck]
 psql/city <- download/geo_export_b921358d-b550-4c64-a8d5-a5e11eb782c4.shp [method:import_shapefile]
 
-psql/rast <- rast.sql, psql/planet_osm [method:psql]
+; grid of pixels
 psql/grid <- grid.sql, psql/planet_osm, psql/city [method:psql]
 
+; calculate distance and update grid.distance
 psql/distances <- distances.py, psql/streets, psql/grid
     python $INPUT && touch $OUTPUT
 
+; create empty raster band
+psql/rast <- rast.sql, psql/planet_osm [method:psql]
+; create new raster setting pixels of rast with distances
 psql/rast_distances <- rast_distances.sql, psql/distances, psql/rast [method:psql]
 
+; https://petewarden.com/2013/08/31/how-to-save-an-image-to-disk-from-postgis/
 rast_distances.tiff <- psql/rast_distances
     psql -c "\COPY (SELECT encode(ST_AsTIFF(st_setvalues), 'hex') AS tiff FROM rast_distances) TO STDOUT" | xxd -p -r > $OUTPUT
     
