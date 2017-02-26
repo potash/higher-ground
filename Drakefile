@@ -19,10 +19,6 @@ import_shapefile()
 
 %include default_profile
 
-;URL="https://data.cityofchicago.org/api/geospatial/6imu-meau?method=export&format=Shapefile"
-;download/streets.zip, download/geo_export_ecdacebe-e3d0-4152-96e9-6559a5639038.shp <- [method:wget_unzip -timecheck]
-;psql/streets <- download/geo_export_ecdacebe-e3d0-4152-96e9-6559a5639038.shp [method:import_shapefile]
-
 URL="https://s3.amazonaws.com/metro-extracts.mapzen.com/chicago_illinois.osm.pbf"
 download/chicago_illinois.osm.pbf <- [method:wget -timecheck]
 
