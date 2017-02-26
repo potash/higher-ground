@@ -1,7 +1,7 @@
 drop table if exists grid;
 create table grid as (
 
-with extent as (select st_extent(geom) as geom from streets)
+with extent as (select st_extent(way) as geom from planet_osm_roads)
 
 select st_setsrid(
     st_makepoint(st_xmin(geom) + dx/1024.0*(st_xmax(geom) - st_xmin(geom)),

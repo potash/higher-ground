@@ -1,7 +1,7 @@
 drop table if exists rast;
 create table rast as (
 
-with extent as (select st_extent(geom) as geom from streets)
+with extent as (select st_extent(way) as geom from planet_osm_roads)
 
 select 1 as rid,
     st_addband(st_MakeEmptyRaster(
