@@ -4,3 +4,4 @@
 default_profile
 psql/
 download/
+*.tiff
