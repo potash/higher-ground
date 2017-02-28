@@ -7,3 +7,5 @@ where highway in (
     'residential', 'service', 'motorway_link', 'trunk_link', 'primary_link', 
     'secondary_link', 'motorway_junction')
 );
+
+create index roads_index on roads using gist(way);
