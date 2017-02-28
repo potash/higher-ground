@@ -6,4 +6,5 @@ where highway in (
     'motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'unclassified', 
     'residential', 'service', 'motorway_link', 'trunk_link', 'primary_link', 
     'secondary_link', 'motorway_junction')
+or aeroway is not null
 );
