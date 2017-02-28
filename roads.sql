@@ -8,3 +8,5 @@ where highway in (
     'secondary_link', 'motorway_junction')
 or aeroway is not null
 );
+
+create index roads_index on roads using gist(way);

@@ -21,24 +21,27 @@ raster2tiff()
 psql/planet_osm <- download/chicago_illinois.osm.pbf
     osm2pgsql --slim --proj $SRID --create --database $PGDATABASE $INPUT && touch $OUTPUT
 
+; select land polygon using ${LAND_CONDITION}
 psql/land <- land.sql, psql/planet_osm [method:psql]
-; grid of pixels
-psql/extent <- extent.sql, psql/planet_osm, psql/land [method:psql]
+
+; raster indicating which points are land
+; used to filter distance calculations
+; and as reference for output raster
+psql/land_raster <- land_raster.sql, psql/land [method:psql]
+
+; subset roads
 psql/roads <- roads.sql, psql/planet_osm [method:psql]
 
-; grid of pixels
-psql/grid <- grid.sql, psql/extent, psql/land [method:psql]
+; create table of points over land by rasterizing land
+psql/points <- points.sql, psql/land_raster [method:psql]
 
-; calculate distance and update grid.distance
-psql/distances <- distances.py, psql/planet_osm, psql/grid, psql/roads
-    python $INPUT && touch $OUTPUT
+; calculate distances
+psql/distances <- distances.sql, psql/points, psql/roads [method:psql]
 
-; create empty raster band
-psql/rast <- rast.sql, psql/extent [method:psql]
 ; create new raster setting pixels of rast with distances
-psql/rast_distances <- rast_distances.sql, psql/distances, psql/rast [method:psql]
+psql/distances_raster <- distances_raster.sql, psql/distances, psql/land_raster [method:psql]
 
 ; https://petewarden.com/2013/08/31/how-to-save-an-image-to-disk-from-postgis/
-rast_distances.tiff <- psql/rast_distances [method:raster2tiff]
+distances.tiff <- psql/distances_raster [method:raster2tiff]
     
 ; psql/streets_buffered <- streets_buffered.sql, psql/streets [method:psql]
