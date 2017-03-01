@@ -35,6 +35,7 @@ output/water.shp <- psql/water [method:pgsql2shp]
 ; used to filter distance calculations
 ; and as reference for output raster
 psql/area_raster <- area_raster.sql, psql/area [method:psql]
+output/area.tiff <- psql/area_raster [method:raster2tiff]
 
 
 ; create table of points over land by rasterizing land
@@ -42,11 +43,21 @@ psql/points <- points.sql, psql/area_raster [method:psql]
 
 ; calculate distances
 psql/distances <- distances.sql, psql/points, psql/roads [method:psql]
+psql/park_distances <- park_distances.sql, psql/points, psql/parks [method:psql]
 
 ; create new raster setting pixels of rast with distances
 psql/distances_raster <- distances_raster.sql, psql/distances, psql/area_raster [method:psql]
 
+psql/park_distances_raster <- park_distances_raster.sql, psql/park_distances, psql/area_raster [method:psql]
+
 ; https://petewarden.com/2013/08/31/how-to-save-an-image-to-disk-from-postgis/
 output/distances.tiff <- psql/distances_raster [method:raster2tiff]
+output/park_distances.tiff <- psql/park_distances_raster [method:raster2tiff]
     
 ; psql/streets_buffered <- streets_buffered.sql, psql/streets [method:psql]
+
+; gdal_calc.py -A output/distances.tiff -B output/park_distances.tiff --outfile=output/diff_distances.tiff --calc="A-B" --NoDataValue=-2147483648
+
+; gdaldem hillshade -z 2 output/diff_distances.tiff output/diff_distances_hillshade.tiff
+
+; gdaldem color-relief output/diff_distances.tiff color-relief2.txt output/diff_distances_color_relief.tiff
