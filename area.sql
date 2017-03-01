@@ -1,5 +1,5 @@
-drop table if exists land;
-create table land as (
+drop table if exists area;
+create table area as (
 
 select st_union(way) as geom 
 from planet_osm_polygon 

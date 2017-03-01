@@ -1,47 +1,52 @@
 PROFILE:=default_profile
 %include $[PROFILE]
 
-PYTHONUNBUFFERED=Y
 wget()
     mkdir -p $(dirname $OUTPUT0)
     wget --output-document="$OUTPUT0" "$URL"
 
-wget_unzip()
-    mkdir -p $(dirname $OUTPUT0)
-    wget --output-document="$OUTPUT0" "$URL"
-    unzip -o "$OUTPUT0" -d $(dirname $OUTPUT1)
-
 psql()
     cat $INPUT | envsubst | psql -v ON_ERROR_STOP=1 2>&1 && echo > $OUTPUT
+
+pgsql2shp()
+    TABLE=$(basename $INPUT)
+    pgsql2shp -f $OUTPUT $PGDATABASE $TABLE 
 
 raster2tiff()
     TABLE=$(basename $INPUT)
     psql -c "\COPY (SELECT encode(ST_AsTIFF(rast), 'hex') AS tiff FROM $TABLE) TO STDOUT" | xxd -p -r > $OUTPUT
+
+
+URL="https://s3.amazonaws.com/metro-extracts.mapzen.com/chicago_illinois.osm.pbf"
+download/chicago_illinois.osm.pbf <- [method:wget -timecheck]
     
 psql/planet_osm <- download/chicago_illinois.osm.pbf
     osm2pgsql --slim --proj $SRID --create --database $PGDATABASE $INPUT && touch $OUTPUT
 
 ; select land polygon using ${LAND_CONDITION}
-psql/land <- land.sql, psql/planet_osm [method:psql]
+psql/area <- area.sql, psql/planet_osm [method:psql]
+psql/water <- water.sql, psql/planet_osm [method:psql]
+psql/parks <- parks.sql, psql/planet_osm [method:psql]
+psql/roads <- roads.sql, psql/planet_osm [method:psql]
+
+output/water.shp <- psql/water [method:pgsql2shp]
 
 ; raster indicating which points are land
 ; used to filter distance calculations
 ; and as reference for output raster
-psql/land_raster <- land_raster.sql, psql/land [method:psql]
+psql/area_raster <- area_raster.sql, psql/area [method:psql]
 
-; subset roads
-psql/roads <- roads.sql, psql/planet_osm [method:psql]
 
 ; create table of points over land by rasterizing land
-psql/points <- points.sql, psql/land_raster [method:psql]
+psql/points <- points.sql, psql/area_raster [method:psql]
 
 ; calculate distances
 psql/distances <- distances.sql, psql/points, psql/roads [method:psql]
 
 ; create new raster setting pixels of rast with distances
-psql/distances_raster <- distances_raster.sql, psql/distances, psql/land_raster [method:psql]
+psql/distances_raster <- distances_raster.sql, psql/distances, psql/area_raster [method:psql]
 
 ; https://petewarden.com/2013/08/31/how-to-save-an-image-to-disk-from-postgis/
-distances.tiff <- psql/distances_raster [method:raster2tiff]
+output/distances.tiff <- psql/distances_raster [method:raster2tiff]
     
 ; psql/streets_buffered <- streets_buffered.sql, psql/streets [method:psql]

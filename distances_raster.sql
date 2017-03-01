@@ -28,6 +28,6 @@ array2d as (
 )
 
 select st_setvalues(rast, 1, 1, 1, values::double precision[][]) rast 
-from array2d, land_raster
+from array2d, area_raster
 
 );
