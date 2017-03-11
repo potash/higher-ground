@@ -11,7 +11,7 @@ create table park_distances_raster as (
 with distances as (
     select geom,distance from park_distances
     UNION ALL
-    select geom,-1
+    select geom,null
     from points where not land
 ),
 

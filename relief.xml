@@ -1,0 +1,64 @@
+<Map srs="+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs">
+
+  <Style name="color relief style">
+    <Rule>
+        <RasterSymbolizer mode="normal" />
+    </Rule>
+  </Style>  
+  <Style name="slopeshade style">
+    <Rule>
+      <RasterSymbolizer opacity="0.1" mode="multiply" />
+    </Rule>
+  </Style> 
+  <Style name="hillshade style">
+    <Rule>
+      <RasterSymbolizer opacity="0.4" mode="multiply" />
+    </Rule>
+  </Style>
+  <Style name='water'>
+    <Rule>
+        <PolygonSymbolizer fill="steelblue"/>
+    </Rule>
+  </Style>
+  <Style name='mask'>
+    <Rule>
+        <RasterSymbolizer/>
+    </Rule>
+    </Style>
+
+  <Layer name="color relief">
+    <StyleName>color relief style</StyleName>
+    <Datasource>
+      <Parameter name="type">gdal</Parameter>
+      <Parameter name="file">output/diff_distances_color.tiff</Parameter>
+    </Datasource>
+  </Layer>
+  <Layer name="slopeshade">
+    <StyleName>hillshade style</StyleName>
+    <Datasource>
+      <Parameter name="type">gdal</Parameter>
+      <Parameter name="file">output/diff_distances_slope.tiff</Parameter>
+    </Datasource>
+  </Layer>
+  <Layer name="hillshade">
+    <StyleName>hillshade style</StyleName>
+    <Datasource>
+      <Parameter name="type">gdal</Parameter>
+      <Parameter name="file">output/diff_distances_hillshade.tiff</Parameter>
+    </Datasource>
+    </Layer>
+    <Layer name="water">
+            <StyleName>water</StyleName>
+            <Datasource>
+                    <Parameter name="type">shape</Parameter>
+                    <Parameter name="file">output/water.shp</Parameter>
+            </Datasource>
+    </Layer>
+    <Layer name="mask">
+            <StyleName>mask</StyleName>
+            <Datasource>
+                    <Parameter name="type">gdal</Parameter>
+                    <Parameter name="file">output/mask.tiff</Parameter>
+            </Datasource>
+    </Layer>
+</Map>

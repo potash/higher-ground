@@ -1,6 +1,9 @@
 PROFILE:=default_profile
 %include $[PROFILE]
 
+NODATA_VALUE:=-2147483648
+PIXELTYPE:="32BF"
+
 wget()
     mkdir -p $(dirname $OUTPUT0)
     wget --output-document="$OUTPUT0" "$URL"
@@ -10,7 +13,7 @@ psql()
 
 pgsql2shp()
     TABLE=$(basename $INPUT)
-    pgsql2shp -f $OUTPUT $PGDATABASE $TABLE 
+    pgsql2shp -g geom -f $OUTPUT $PGDATABASE $TABLE 
 
 raster2tiff()
     TABLE=$(basename $INPUT)
@@ -25,7 +28,7 @@ psql/planet_osm <- download/chicago_illinois.osm.pbf
 
 ; select land polygon using ${LAND_CONDITION}
 psql/area <- area.sql, psql/planet_osm [method:psql]
-psql/water <- water.sql, psql/planet_osm [method:psql]
+psql/water <- water.sql, psql/planet_osm, psql/area [method:psql]
 psql/parks <- parks.sql, psql/planet_osm [method:psql]
 psql/roads <- roads.sql, psql/planet_osm [method:psql]
 
@@ -37,6 +40,8 @@ output/water.shp <- psql/water [method:pgsql2shp]
 psql/area_raster <- area_raster.sql, psql/area [method:psql]
 output/area.tiff <- psql/area_raster [method:raster2tiff]
 
+psql/mask_raster <- mask_raster.sql, psql/area_raster, psql/planet_osm [method:psql]
+output/mask.tiff <- psql/mask_raster [method:raster2tiff]
 
 ; create table of points over land by rasterizing land
 psql/points <- points.sql, psql/area_raster [method:psql]
@@ -54,10 +59,22 @@ psql/park_distances_raster <- park_distances_raster.sql, psql/park_distances, ps
 output/distances.tiff <- psql/distances_raster [method:raster2tiff]
 output/park_distances.tiff <- psql/park_distances_raster [method:raster2tiff]
     
-; psql/streets_buffered <- streets_buffered.sql, psql/streets [method:psql]
+METRIC_RATIO:=1
+METRIC_SCALE:=1
 
-; gdal_calc.py -A output/distances.tiff -B output/park_distances.tiff --outfile=output/diff_distances.tiff --calc="A-B" --NoDataValue=-2147483648
+output/diff_distances.tiff <- output/distances.tiff, output/park_distances.tiff
+    gdal_calc.py --overwrite -A $INPUT0 -B $INPUT1 --outfile=$OUTPUT --calc="$METRIC_SCALE*(A-$METRIC_RATIO*B)" --NoDataValue=${NODATA_VALUE}
 
-; gdaldem hillshade -z 2 output/diff_distances.tiff output/diff_distances_hillshade.tiff
+output/diff_distances_hillshade.tiff <- output/diff_distances.tiff
+    gdaldem hillshade $INPUT $OUTPUT
 
-; gdaldem color-relief output/diff_distances.tiff color-relief2.txt output/diff_distances_color_relief.tiff
+output/diff_distances_slope.tiff <- output/diff_distances.tiff
+    gdaldem slope $INPUT $OUTPUT
+
+output/diff_distances_color.tiff <- output/diff_distances.tiff, color-relief.txt
+    gdaldem color-relief $INPUT $INPUT1 $OUTPUT
+
+output/diff_distances_relief.png <- relief.py, output/diff_distances_color.tiff, output/diff_distances_slope.tiff, output/diff_distances_hillshade.tiff, output/mask.tiff
+    python $INPUT
+
+; ogr2ogr -clipsrc ~/openstreetmap-carto/data/land-polygons-split-3857/land_polygons.shp output/land_polygons_clipped.shp output/area.shp
