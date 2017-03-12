@@ -1,7 +1,8 @@
 drop table if exists ${SCHEMA}.water;
 
 create table ${SCHEMA}.water as (
-    select st_intersection(way, area.geom) geom, planet_osm_polygon.*
+    select way as geom, 
+        planet_osm_polygon.*
     from ${SCHEMA}.planet_osm_polygon, ${SCHEMA}.area
     where st_intersects(way, area.geom) and coalesce(leisure != 'marina', true) and (
     water is not null
