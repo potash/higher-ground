@@ -1,16 +1,15 @@
-<Map srs="+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs">
-
-  <Style name="color relief style">
+<Map>
+  <Style name="color">
     <Rule>
         <RasterSymbolizer mode="normal" />
     </Rule>
   </Style>  
-  <Style name="slopeshade style">
+  <Style name="slope">
     <Rule>
       <RasterSymbolizer opacity="0.1" mode="multiply" />
     </Rule>
   </Style> 
-  <Style name="hillshade style">
+  <Style name="hillshade">
     <Rule>
       <RasterSymbolizer opacity="0.4" mode="multiply" />
     </Rule>
@@ -24,15 +23,15 @@
     <Rule>
         <RasterSymbolizer/>
     </Rule>
-    </Style>
-
+</Style>
+  <!--
   <Layer name="color relief">
     <StyleName>color relief style</StyleName>
     <Datasource>
       <Parameter name="type">gdal</Parameter>
-      <Parameter name="file">output/diff_distances_color.tiff</Parameter>
+      <Parameter name="file">output/chicago/diff_distances_color.tiff</Parameter>
     </Datasource>
-  </Layer>
+</Layer>
   <Layer name="slopeshade">
     <StyleName>hillshade style</StyleName>
     <Datasource>
@@ -61,4 +60,5 @@
                     <Parameter name="file">output/mask.tiff</Parameter>
             </Datasource>
     </Layer>
+   -->
 </Map>

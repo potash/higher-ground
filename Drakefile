@@ -1,6 +1,7 @@
 PROFILE:=default_profile
 %include $[PROFILE]
 
+PYTHONUNBUFFERED:=Y
 SCHEMA:=public
 NODATA_VALUE:=-2147483648
 PIXELTYPE:="32BF"
@@ -85,5 +86,5 @@ output/$[SCHEMA]/diff_distances_slope.tiff <- output/$[SCHEMA]/diff_distances.ti
 output/$[SCHEMA]/diff_distances_color.tiff <- output/$[SCHEMA]/diff_distances.tiff, color-relief.txt
     gdaldem color-relief $INPUT $INPUT1 $OUTPUT
 
-output/$[SCHEMA]/diff_distances_relief.png <- relief.py, output/$[SCHEMA]/diff_distances_color.tiff, output/$[SCHEMA]/diff_distances_slope.tiff, output/$[SCHEMA]/diff_distances_hillshade.tiff, output/$[SCHEMA]/mask.tiff
+output/$[SCHEMA]/relief.png <- relief.py, relief.xml, output/$[SCHEMA]/diff_distances_color.tiff, output/$[SCHEMA]/diff_distances_slope.tiff, output/$[SCHEMA]/diff_distances_hillshade.tiff, output/$[SCHEMA]/water.shp, output/$[SCHEMA]/mask.tiff
     python $INPUT
