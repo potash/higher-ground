@@ -1,6 +1,7 @@
 PROFILE:=default_profile
 %include $[PROFILE]
 
+SCHEMA:=public
 NODATA_VALUE:=-2147483648
 PIXELTYPE:="32BF"
 
@@ -11,70 +12,78 @@ wget()
 psql()
     cat $INPUT | envsubst | psql -v ON_ERROR_STOP=1 2>&1 && echo > $OUTPUT
 
+psql_schema()
+    schema=$(basename $(dirname $OUTPUT))
+    psql -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS $schema" && mkdir -p $(dirname $OUTPUT) && touch $OUTPUT
+
 pgsql2shp()
+    mkdir -p $(dirname $OUTPUT)
     TABLE=$(basename $INPUT)
-    pgsql2shp -g geom -f $OUTPUT $PGDATABASE $TABLE 
+    pgsql2shp -g geom -f $OUTPUT $PGDATABASE $SCHEMA.$TABLE 
 
 raster2tiff()
+    mkdir -p $(dirname $OUTPUT)
     TABLE=$(basename $INPUT)
-    psql -c "\COPY (SELECT encode(ST_AsTIFF(rast), 'hex') AS tiff FROM $TABLE) TO STDOUT" | xxd -p -r > $OUTPUT
+    psql -c "\COPY (SELECT encode(ST_AsTIFF(rast), 'hex') AS tiff FROM $SCHEMA.$TABLE) TO STDOUT" | xxd -p -r > $OUTPUT
 
 
 URL="https://s3.amazonaws.com/metro-extracts.mapzen.com/chicago_illinois.osm.pbf"
-download/chicago_illinois.osm.pbf <- [method:wget -timecheck]
+download/$[SCHEMA]/chicago_illinois.osm.pbf <- [method:wget -timecheck]
+
+psql/$[SCHEMA]/schema <- [method:psql_schema -timecheck]
     
-psql/planet_osm <- download/chicago_illinois.osm.pbf
-    osm2pgsql --slim --proj $SRID --create --database $PGDATABASE $INPUT && touch $OUTPUT
+psql/$[SCHEMA]/planet_osm <- download/$[SCHEMA]/chicago_illinois.osm.pbf, mv_osm.sql, psql/$[SCHEMA]/schema
+    osm2pgsql --slim --proj $SRID --create --database $PGDATABASE  --prefix $SCHEMA_osm $INPUT &&\
+        cat $INPUT1 | envsubst | psql -v ON_ERROR_STOP=1 &&\
+        touch $OUTPUT
 
 ; select land polygon using ${LAND_CONDITION}
-psql/area <- area.sql, psql/planet_osm [method:psql]
-psql/water <- water.sql, psql/planet_osm, psql/area [method:psql]
-psql/parks <- parks.sql, psql/planet_osm [method:psql]
-psql/roads <- roads.sql, psql/planet_osm [method:psql]
+psql/$[SCHEMA]/area <- area.sql, psql/$[SCHEMA]/planet_osm [method:psql]
+psql/$[SCHEMA]/water <- water.sql, psql/$[SCHEMA]/planet_osm, psql/$[SCHEMA]/area [method:psql]
+psql/$[SCHEMA]/parks <- parks.sql, psql/$[SCHEMA]/planet_osm [method:psql]
+psql/$[SCHEMA]/roads <- roads.sql, psql/$[SCHEMA]/planet_osm [method:psql]
 
-output/water.shp <- psql/water [method:pgsql2shp]
+output/$[SCHEMA]/water.shp <- psql/$[SCHEMA]/water [method:pgsql2shp]
 
 ; raster indicating which points are land
 ; used to filter distance calculations
 ; and as reference for output raster
-psql/area_raster <- area_raster.sql, psql/area [method:psql]
-output/area.tiff <- psql/area_raster [method:raster2tiff]
+psql/$[SCHEMA]/area_raster <- area_raster.sql, psql/$[SCHEMA]/area [method:psql]
+output/$[SCHEMA]/area.tiff <- psql/$[SCHEMA]/area_raster [method:raster2tiff]
 
-psql/mask_raster <- mask_raster.sql, psql/area_raster, psql/planet_osm [method:psql]
-output/mask.tiff <- psql/mask_raster [method:raster2tiff]
+psql/$[SCHEMA]/mask_raster <- mask_raster.sql, psql/$[SCHEMA]/area_raster, psql/$[SCHEMA]/planet_osm [method:psql]
+output/$[SCHEMA]/mask.tiff <- psql/$[SCHEMA]/mask_raster [method:raster2tiff]
 
 ; create table of points over land by rasterizing land
-psql/points <- points.sql, psql/area_raster [method:psql]
+psql/$[SCHEMA]/points <- points.sql, psql/$[SCHEMA]/area_raster [method:psql]
 
 ; calculate distances
-psql/distances <- distances.sql, psql/points, psql/roads [method:psql]
-psql/park_distances <- park_distances.sql, psql/points, psql/parks [method:psql]
+psql/$[SCHEMA]/distances <- distances.sql, psql/$[SCHEMA]/points, psql/$[SCHEMA]/roads [method:psql]
+psql/$[SCHEMA]/park_distances <- park_distances.sql, psql/$[SCHEMA]/points, psql/$[SCHEMA]/parks [method:psql]
 
 ; create new raster setting pixels of rast with distances
-psql/distances_raster <- distances_raster.sql, psql/distances, psql/area_raster [method:psql]
+psql/$[SCHEMA]/distances_raster <- distances_raster.sql, psql/$[SCHEMA]/distances, psql/$[SCHEMA]/area_raster [method:psql]
 
-psql/park_distances_raster <- park_distances_raster.sql, psql/park_distances, psql/area_raster [method:psql]
+psql/$[SCHEMA]/park_distances_raster <- park_distances_raster.sql, psql/$[SCHEMA]/park_distances, psql/$[SCHEMA]/area_raster [method:psql]
 
 ; https://petewarden.com/2013/08/31/how-to-save-an-image-to-disk-from-postgis/
-output/distances.tiff <- psql/distances_raster [method:raster2tiff]
-output/park_distances.tiff <- psql/park_distances_raster [method:raster2tiff]
+output/$[SCHEMA]/distances.tiff <- psql/$[SCHEMA]/distances_raster [method:raster2tiff]
+output/$[SCHEMA]/park_distances.tiff <- psql/$[SCHEMA]/park_distances_raster [method:raster2tiff]
     
 METRIC_RATIO:=1
 METRIC_SCALE:=1
 
-output/diff_distances.tiff <- output/distances.tiff, output/park_distances.tiff
+output/$[SCHEMA]/diff_distances.tiff <- output/$[SCHEMA]/distances.tiff, output/$[SCHEMA]/park_distances.tiff
     gdal_calc.py --overwrite -A $INPUT0 -B $INPUT1 --outfile=$OUTPUT --calc="$METRIC_SCALE*(A-$METRIC_RATIO*B)" --NoDataValue=${NODATA_VALUE}
 
-output/diff_distances_hillshade.tiff <- output/diff_distances.tiff
+output/$[SCHEMA]/diff_distances_hillshade.tiff <- output/$[SCHEMA]/diff_distances.tiff
     gdaldem hillshade $INPUT $OUTPUT
 
-output/diff_distances_slope.tiff <- output/diff_distances.tiff
+output/$[SCHEMA]/diff_distances_slope.tiff <- output/$[SCHEMA]/diff_distances.tiff
     gdaldem slope $INPUT $OUTPUT
 
-output/diff_distances_color.tiff <- output/diff_distances.tiff, color-relief.txt
+output/$[SCHEMA]/diff_distances_color.tiff <- output/$[SCHEMA]/diff_distances.tiff, color-relief.txt
     gdaldem color-relief $INPUT $INPUT1 $OUTPUT
 
-output/diff_distances_relief.png <- relief.py, output/diff_distances_color.tiff, output/diff_distances_slope.tiff, output/diff_distances_hillshade.tiff, output/mask.tiff
+output/$[SCHEMA]/diff_distances_relief.png <- relief.py, output/$[SCHEMA]/diff_distances_color.tiff, output/$[SCHEMA]/diff_distances_slope.tiff, output/$[SCHEMA]/diff_distances_hillshade.tiff, output/$[SCHEMA]/mask.tiff
     python $INPUT
-
-; ogr2ogr -clipsrc ~/openstreetmap-carto/data/land-polygons-split-3857/land_polygons.shp output/land_polygons_clipped.shp output/area.shp

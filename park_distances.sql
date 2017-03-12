@@ -1,10 +1,10 @@
-drop table if exists park_distances;
+drop table if exists ${SCHEMA}.park_distances;
 
-create table park_distances as (
+create table ${SCHEMA}.park_distances as (
     select geom,
         (select p.geom<->parks.way distance
-         from parks
+         from ${SCHEMA}.parks
          order by p.geom<->parks.way asc limit 1)
-    from points p                                           
+    from ${SCHEMA}.points p                                    
     where land
 );

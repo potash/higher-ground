@@ -1,11 +1,6 @@
-drop table if exists area;
-create table area as (
-with land as (
+drop table if exists ${SCHEMA}.area;
+create table ${SCHEMA}.area as (
     select st_collect(way) as geom
-    from planet_osm_polygon 
+    from ${SCHEMA}.planet_osm_polygon 
     where ${LAND_CONDITION}
-)
-
-select * from land
-
 );

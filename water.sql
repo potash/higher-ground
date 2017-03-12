@@ -1,8 +1,8 @@
-drop table if exists water;
+drop table if exists ${SCHEMA}.water;
 
-create table water as (
+create table ${SCHEMA}.water as (
     select st_intersection(way, area.geom) geom, planet_osm_polygon.*
-    from planet_osm_polygon, area
+    from ${SCHEMA}.planet_osm_polygon, ${SCHEMA}.area
     where st_intersects(way, area.geom) and coalesce(leisure != 'marina', true) and (
     water is not null
     or "natural" = 'water'
@@ -10,4 +10,4 @@ create table water as (
     )
 );
 
-create index water_index on water using gist (way);
+create index water_index on ${SCHEMA}.water using gist (way);
