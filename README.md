@@ -1,4 +1,4 @@
-# roadmap
+# Higher Ground
 
 The code in this repository processes Open Street Map data to calculate, for each location in a specified region:
   - `d_road`, the distance from that location to the nearest road, and
