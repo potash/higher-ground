@@ -24,19 +24,19 @@ Next we take a typical roadmap:
 
 | ![](docs/road.png) |
 | --- |
-| A standard roadmap. |
+| A typical roadmap. |
 
-And composite the two for our final map:
+And composite the two into our final map:
 
 | ![](docs/composite.jpeg) |
 | --- |
 | The final map. |
 
 ## Analysis
-By analyzing `d_road` we can identify the parks in a city which are farthest from roads.
+By analyzing `d_road` we identify the parks in a city which are farthest from roads.
 These are typically large parks but can also be smaller parks bordered by industrial sites or water.
 
-Conservely we can use `d_park` to find the urban points which are farthest from a park.
+Similarly, we use `d_park` to find the urban points which are farthest from a park.
 
 ## Technical Details
 The data is loaded from [OpenStreetmap](https://www.mapbox.com/) (OSM) into a database (PostgreSQL with the PostGIS extension) using the the `osm2pgsql` program.
