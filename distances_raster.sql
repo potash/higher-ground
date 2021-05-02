@@ -5,15 +5,15 @@ CREATE AGGREGATE array_agg_mult (anyarray)  (
    ,INITCOND  = '{}'
 );
 
-drop table if exists ${SCHEMA}.distances_raster;
-create table ${SCHEMA}.distances_raster as (
+drop table if exists distances_raster;
+create table distances_raster as (
 
 with distances as (
     select geom, distance 
-    from ${SCHEMA}.distances
+    from distances
     UNION ALL
     select geom, null
-    from ${SCHEMA}.points where not land
+    from points where not land
 ),
 
 array1d as (
@@ -29,6 +29,6 @@ array2d as (
 )
 
 select st_setvalues(rast, 1, 1, 1, values::double precision[][]) rast 
-from array2d, ${SCHEMA}.area_raster
+from array2d, area_raster
 
 );

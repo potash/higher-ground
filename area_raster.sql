@@ -1,6 +1,6 @@
-drop table if exists ${SCHEMA}.area_raster;
+drop table if exists area_raster;
 
-create table ${SCHEMA}.area_raster as (
+create table area_raster as (
     select st_asraster(geom,${SCALE}, -${SCALE}, '${PIXELTYPE}',1,${NODATA_VALUE}) rast
-    from ${SCHEMA}.area
+    from area
 );

@@ -1,10 +1,10 @@
-drop table if exists ${SCHEMA}.distances;
+drop table if exists distances;
 
-create table ${SCHEMA}.distances as (
+create table distances as (
     select geom,
         (select p.geom<->r.way distance
-         from ${SCHEMA}.roads r
+         from roads r
          order by p.geom<->r.way asc limit 1)
-    from ${SCHEMA}.points p
+    from points p
     where land
 );

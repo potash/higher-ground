@@ -3,6 +3,7 @@ PROFILE:=default_profile
 
 PYTHONUNBUFFERED:=Y
 SCHEMA:=public
+DOWNLOAD_DIR:=/home/eric/docs/www/osm/
 NODATA_VALUE:=-2147483648
 PIXELTYPE:="32BF"
 

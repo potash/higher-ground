@@ -1,8 +1,8 @@
-drop table if exists ${SCHEMA}.roads;
+drop table if exists roads;
 
-create table ${SCHEMA}.roads as (
+create table roads as (
 select * 
-from ${SCHEMA}.planet_osm_line
+from planet_osm_line
 where highway in (
     'motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'unclassified', 
     'residential', 'service', 'motorway_link', 'trunk_link', 'primary_link', 
@@ -10,4 +10,4 @@ where highway in (
 or aeroway is not null
 );
 
-create index roads_index on ${SCHEMA}.roads using gist(way);
+create index roads_index on roads using gist(way);
